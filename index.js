@@ -2,6 +2,7 @@ const express = require("express")
 const cors = require("cors")
 const { initializeDatabase } = require("./db/db.connect")
 const Agent = require("./models/agent.model.js")
+const Lead = require("./models/lead.model.js")
 
 initializeDatabase()
 
@@ -45,8 +46,23 @@ app.get("/agents", async(req, res) => {
     }
 })
 
-const PORT = 3000;
+app.post("/leads", async(req, res) => {
+    try {
 
+        const data = req.body;
+        const leadObj = new Lead(data);
+        const savedObj = await leadObj.save();
+
+        if (savedObj) {
+            res.status(201).json({ message: "Lead Created" })
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: "Could Not Add the Lead.", error })
+    }
+})
+
+const PORT = 3000;
 app.listen(PORT, () => {
     console.log("Server running on PORT", PORT)
 })
