@@ -22,6 +22,8 @@ app.post("/agents", async(req, res) => {
         const savedAgent = await agent.save();
         if (savedAgent) {
             res.status(201).json({ message: "Agent Saved Successfully", agent: savedAgent })
+        } else {
+            res.status()
         }
 
     } catch (error) {
@@ -54,7 +56,7 @@ app.post("/leads", async(req, res) => {
         const savedObj = await leadObj.save();
 
         if (savedObj) {
-            res.status(201).json({ message: "Lead Created" })
+            res.status(201).json({ message: "Lead Created", lead: savedObj })
         }
 
     } catch (error) {
