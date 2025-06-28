@@ -64,6 +64,21 @@ app.post("/leads", async(req, res) => {
     }
 })
 
+app.get("/leads", async(req, res) => {
+    try {
+
+        const leadsList = await Lead.find();
+        if (leadsList) {
+            res.json(leadsList)
+        } else {
+            res.status(404).json({ message: "Leads Not Found" })
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: "Cannot fetch The Leads", error })
+    }
+})
+
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log("Server running on PORT", PORT)
