@@ -50,8 +50,29 @@ app.get("/agents", async(req, res) => {
 
 app.post("/leads", async(req, res) => {
     try {
-
         const data = req.body;
+        const requiredKeys = ["name", "source", "salesAgent", "status", "tags", "timeToClose", "priority"];
+        const agents = await Agent.find();
+        for (const key of requiredKeys) {
+            if (key in data && (data[key] != "" || data[key] != 0 || data[key].length > 0) && key != "salesAgent") {
+                continue;
+            } else if (key == "salesAgent") {
+                let matched = false;
+                for (ele of agents) {
+                    if (ele._id == data[key]) {
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    res.status(404).json({ error: `Sales agent with ID '${data[key]}' not found.` })
+                }
+
+            } else {
+                res.status(400).json({ error: `Invalid input: '${key}' is required.` })
+            }
+        }
+
         const leadObj = new Lead(data);
         const savedObj = await leadObj.save();
 
@@ -66,8 +87,24 @@ app.post("/leads", async(req, res) => {
 
 app.get("/leads", async(req, res) => {
     try {
+        const agentAssigned = req.query.salesAgent;
+        const leadStatus = req.query.status;
+        const leadTags = req.query.tags;
+        const source = req.query.source;
+        const filter = {};
+        const agents = await Agent.find();
+        const statusArr = ['New', 'Contacted', 'Qualified', 'Proposal Sent', 'Closed'];
+        if (agentAssigned) filter.salesAgent = agentAssigned;
+        if (leadStatus && statusArr.includes(leadStatus)) {
+            filter.status = leadStatus;
+        } else {
+            res.status(400).json({ error: "Invalid input: 'status' must be one of ['New', 'Contacted', 'Qualified', 'Proposal Sent', 'Closed']." })
+        }
+        if (leadTags) filter.tags = leadTags;
+        if (source) filter.source = source;
 
-        const leadsList = await Lead.find().populate("salesAgent");
+
+        const leadsList = await Lead.find(filter).populate("salesAgent");
         if (leadsList) {
             res.json(leadsList)
         } else {
