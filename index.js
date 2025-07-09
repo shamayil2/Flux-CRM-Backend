@@ -87,22 +87,44 @@ app.post("/leads", async(req, res) => {
 
 app.get("/leads", async(req, res) => {
     try {
-        const agentAssigned = req.query.salesAgent;
-        const leadStatus = req.query.status;
-        const leadTags = req.query.tags;
-        const source = req.query.source;
+
+        const { salesAgent, status, tags, source } = req.query;
         const filter = {};
         const agents = await Agent.find();
-        const statusArr = ['New', 'Contacted', 'Qualified', 'Proposal Sent', 'Closed'];
-        if (agentAssigned) filter.salesAgent = agentAssigned;
-        if (leadStatus && statusArr.includes(leadStatus)) {
-            filter.status = leadStatus;
-        } else {
-            res.status(400).json({ error: "Invalid input: 'status' must be one of ['New', 'Contacted', 'Qualified', 'Proposal Sent', 'Closed']." })
-        }
-        if (leadTags) filter.tags = leadTags;
-        if (source) filter.source = source;
+        if (salesAgent) {
+            let matched = false;
+            for (const agent of agents) {
+                if (agent._id == salesAgent) {
+                    matched = true;
+                    filter.salesAgent = salesAgent;
+                    break;
+                }
+            }
+            if (matched == false) {
+                res.status(400).json({ error: "salesAgent must be a valid ObjectId." })
+            }
 
+        }
+        if (status) {
+            const statusArr = ['New', 'Contacted', 'Qualified', 'Proposal Sent', 'Closed'];
+            if (!statusArr.includes(status)) {
+                res.status(400).json({ error: "Invalid input: 'status' must be one of ['New', 'Contacted', 'Qualified', 'Proposal Sent', 'Closed']." })
+            } else {
+                filter.status = status;
+            }
+        }
+        if (source) {
+            const sourcesArr = ["Cold Call", "Referral", "Website"]
+            if (!sourcesArr.includes(source)) {
+                res.status(400).json({ error: "Invalid input: 'source' must be one of [Cold Call,Referral,Website]" })
+            } else {
+                filter.source = source;
+            }
+
+        }
+        if (tags) {
+            filter.tags = tags;
+        }
 
         const leadsList = await Lead.find(filter).populate("salesAgent");
         if (leadsList) {
