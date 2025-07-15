@@ -88,7 +88,7 @@ app.post("/leads", async(req, res) => {
 app.get("/leads", async(req, res) => {
     try {
 
-        const { salesAgent, status, tags, source } = req.query;
+        const { salesAgent, status, tags, source, timeToClose, priority } = req.query;
         const filter = {};
         const agents = await Agent.find();
         if (salesAgent) {
@@ -125,17 +125,56 @@ app.get("/leads", async(req, res) => {
         if (tags) {
             filter.tags = tags;
         }
-
-        const leadsList = await Lead.find(filter).populate("salesAgent");
-        if (leadsList) {
-            res.json(leadsList)
-        } else {
-            res.status(404).json({ message: "Leads Not Found" })
+        if (priority) {
+            if (priority == "asce") {
+                const leadsList = await Lead.find(filter).populate("salesAgent").sort({ priority: 1 });
+                checkLeads(leadsList);
+            } else if (priority == "desc") {
+                const leadsList = await Lead.find(filter).populate("salesAgent").sort({ priority: -1 });
+                checkLeads(leadsList);
+            }
         }
+        if (timeToClose) {
+            if (timeToClose == "asc") {
+                const leadsList = await Lead.find(filter).populate("salesAgent").sort({ timeToClose: 1 });
+                checkLeads(leadsList);
+            } else if (timeToClose == "des") {
+                const leadsList = await Lead.find(filter).populate("salesAgent").sort({ timeToClose: -1 });
+                checkLeads(leadsList);
+            }
+        }
+
+
+        const leadsList = await Lead.find(filter).populate("salesAgent")
+        checkLeads(leadsList);
+
+        function checkLeads(leadsList) {
+            if (leadsList) {
+                res.json(leadsList)
+            } else {
+                res.status(404).json({ message: "Leads Not Found" })
+            }
+        }
+
 
     } catch (error) {
         res.status(500).json({ message: "Cannot fetch The Leads", error })
     }
+})
+
+app.delete("/leads", async(req, res) => {
+
+    try {
+        const deleteItems = await Lead.deleteMany({});
+        if (deleteItems) {
+            res.json({ message: "All Leads Deleted Successfully." })
+        } else {
+            res.status(404).json({ message: "Leads Not Found" })
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Cant Delete Leads", error })
+    }
+
 })
 
 const PORT = 3000;

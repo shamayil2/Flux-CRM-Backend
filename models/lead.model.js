@@ -27,7 +27,7 @@ const leadSchema = new mongoose.Schema({
         required: true
     },
     priority: {
-        type: String,
+        type: Number,
         required: true
     }
 
