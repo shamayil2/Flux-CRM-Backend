@@ -177,6 +177,40 @@ app.delete("/leads", async(req, res) => {
 
 })
 
+const getLeadById = async(leadId) => {
+    try {
+
+        const lead = await Lead.findById(leadId).populate("salesAgent");
+        if (lead) {
+            return lead;
+        } else {
+            console.log("Lead Does Not Exist !")
+        }
+
+    } catch (error) {
+        res.status(500).json({ error: "Failed to Get The Lead" })
+    }
+}
+
+app.get("/leads/:leadId", async(req, res) => {
+    try {
+
+        const id = req.params.leadId;
+        const lead = await getLeadById(id)
+        if (lead) {
+            res.json(lead)
+        } else {
+            res.status(404).json({ error: "Lead Does Not Exist", error })
+        }
+
+
+    } catch (error) {
+        res.status(500).json({ error: "Failed to get the Leads." })
+    }
+})
+
+
+
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log("Server running on PORT", PORT)
