@@ -209,6 +209,38 @@ app.get("/leads/:leadId", async(req, res) => {
     }
 })
 
+app.put("/leads/:leadId", async(req, res) => {
+    try {
+        const leadId = req.params.leadId;
+        const updatedObj = req.body;
+        const { name, source, salesAgent } = updatedObj;
+        // if (name) {
+
+        //     if(updatedObj[name]!=""){
+
+        //     }else{
+
+        //     }
+        // }
+
+
+        console.log(updatedObj)
+        const lead = await Lead.findByIdAndUpdate(leadId, { $set: updatedObj }, { new: true }).populate("salesAgent")
+
+        const giveResponse = () => {
+            if (lead) {
+                res.json(lead)
+            } else {
+                res.status(404).json({ error: "Lead Not Found" })
+            }
+        }
+
+
+    } catch (error) {
+        res.status(500).json({ error: "Cannot Update the Leads." })
+    }
+})
+
 
 
 const PORT = 3000;
