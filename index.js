@@ -3,6 +3,7 @@ const cors = require("cors")
 const { initializeDatabase } = require("./db/db.connect")
 const Agent = require("./models/agent.model.js")
 const Lead = require("./models/lead.model.js")
+const Comment = require("./models/comment.model.js")
 
 initializeDatabase()
 
@@ -212,19 +213,56 @@ app.get("/leads/:leadId", async(req, res) => {
 app.put("/leads/:leadId", async(req, res) => {
     try {
         const leadId = req.params.leadId;
-        const updatedObj = req.body;
-        const { name, source, salesAgent } = updatedObj;
-        // if (name) {
+        const leads = await Lead.find();
+        let leadMatch = false;
+        for (const lead of leads) {
+            if (leadId == lead._id) {
+                leadMatch = true;
+                break;
+            }
+        }
 
-        //     if(updatedObj[name]!=""){
+        if (!leadMatch) {
+            res.status(400).json({ error: "Invalid Lead Id" })
+        }
+        const reqData = req.body;
+        const { status, salesAgent, priority } = reqData;
+        let updatedObj = {};
+        if (status) {
 
-        //     }else{
+            const statuses = ["New", "Contacted", "Qualified", "Proposal Sent", "Closed"]
+            if (status != "" && statuses.includes(status)) {
+                updatedObj = { status: status }
+            } else {
+                res.status(400).json({ error: "Status must be a valid value." })
+            }
+        }
 
-        //     }
-        // }
+        if (salesAgent) {
+            const agents = await Agent.find();
+            let matched = false;
+            for (const agent of agents) {
+                if (agent._id == salesAgent) {
+                    updatedObj = {...updatedObj, salesAgent: salesAgent }
+                    matched = true;
+                }
 
+            }
 
-        console.log(updatedObj)
+            if (!matched) {
+                res.status(400).json({ error: `Sales Agent : ${salesAgent} must be a valid sales agent id.` })
+            }
+        }
+        if (priority) {
+            const priorities = ["1", "2", "3"]
+            if (priorities.includes(priority.toString())) {
+                updatedObj = {...updatedObj, priority: priority }
+            } else {
+                res.status(400).json({ error: "Priority should be a valid value" })
+
+            }
+        }
+
         const lead = await Lead.findByIdAndUpdate(leadId, { $set: updatedObj }, { new: true }).populate("salesAgent")
 
         const giveResponse = () => {
@@ -235,9 +273,33 @@ app.put("/leads/:leadId", async(req, res) => {
             }
         }
 
+        giveResponse();
+
 
     } catch (error) {
         res.status(500).json({ error: "Cannot Update the Leads." })
+    }
+})
+
+app.post("/leads/:leadId/comments", async(req, res) => {
+    try {
+        const leadId = req.params.leadId;
+        console.log(leadId)
+        const commentReqBody = req.body;
+        const comment = new Comment(commentReqBody);
+        const commentSaved = await comment.save();
+
+        console.log(commentSaved)
+        if (commentSaved) {
+
+
+        } else {
+            res.status(404).json({ error: "Cant add the comments." })
+        }
+
+
+    } catch (error) {
+        res.status(500).json({ error: "Error Posting Comment" })
     }
 })
 
