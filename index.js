@@ -22,7 +22,7 @@ app.post("/agents", async(req, res) => {
 
         const savedAgent = await agent.save();
         if (savedAgent) {
-            res.status(201).json({ message: "Agent Saved Successfully", agent: savedAgent })
+            res.status(201).json({ message: "Agent Saved Successfully", agent: savedAgent.populate("comments") })
         } else {
             res.status()
         }
@@ -36,7 +36,7 @@ app.post("/agents", async(req, res) => {
 app.get("/agents", async(req, res) => {
     try {
 
-        const agents = await Agent.find();
+        const agents = await Agent.find().populate({ path: "comments", populate: { path: "commentsObj" } });
         if (agents.length > 0) {
             res.json(agents)
         } else {
@@ -146,7 +146,7 @@ app.get("/leads", async(req, res) => {
         }
 
 
-        const leadsList = await Lead.find(filter).populate("salesAgent")
+        const leadsList = await Lead.find(filter).populate({ path: "salesAgent", populate: { path: "comments" } });
         checkLeads(leadsList);
 
         function checkLeads(leadsList) {
@@ -181,7 +181,7 @@ app.delete("/leads", async(req, res) => {
 const getLeadById = async(leadId) => {
     try {
 
-        const lead = await Lead.findById(leadId).populate("salesAgent");
+        const lead = await Lead.findById(leadId).populate({ path: "salesAgent", populate: { path: "comments" } });
         if (lead) {
             return lead;
         } else {
@@ -199,7 +199,7 @@ app.get("/leads/:leadId", async(req, res) => {
         const id = req.params.leadId;
         const lead = await getLeadById(id)
         if (lead) {
-            res.json(lead)
+            res.json(lead);
         } else {
             res.status(404).json({ error: "Lead Does Not Exist", error })
         }
@@ -263,7 +263,7 @@ app.put("/leads/:leadId", async(req, res) => {
             }
         }
 
-        const lead = await Lead.findByIdAndUpdate(leadId, { $set: updatedObj }, { new: true }).populate("salesAgent")
+        const lead = await Lead.findByIdAndUpdate(leadId, { $set: updatedObj }, { new: true }).populate({ path: "salesAgent", populate: { path: "comments" } })
 
         const giveResponse = () => {
             if (lead) {
@@ -284,17 +284,15 @@ app.put("/leads/:leadId", async(req, res) => {
 app.post("/leads/:leadId/comments", async(req, res) => {
     try {
         const leadId = req.params.leadId;
-        console.log(leadId)
         const commentReqBody = req.body;
         const comment = new Comment(commentReqBody);
         const commentSaved = await comment.save();
-
         console.log(commentSaved)
-        if (commentSaved) {
-
-
-        } else {
-            res.status(404).json({ error: "Cant add the comments." })
+        const currentLead = await Lead.findById(leadId).populate("salesAgent");
+        // const leadWithComments = await Agent.findByIdAndUpdate(currentLead, { $push: { comments: { leadId: leadId, commentsObj: commentSaved._id } } }, { new: true }).populate("comments");
+        const leadFetched = await getLeadById(leadId);
+        if (leadFetched) {
+            res.json(leadFetched)
         }
 
 

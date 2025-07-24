@@ -10,8 +10,15 @@ const agentSchema = new mongoose.Schema({
         required: true
     },
     comments: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Comment"
+        leadId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Lead"
+
+        },
+        commentsObj: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Comment"
+        }]
 
     }]
 })
