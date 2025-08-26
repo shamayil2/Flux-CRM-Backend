@@ -60,7 +60,7 @@ app.post("/leads", async(req, res) => {
             } else if (key == "salesAgent") {
                 let matched = false;
                 for (ele of agents) {
-                    if (ele._id == data[key]) {
+                    if (ele.name == data[key]) {
                         matched = true;
                         break;
                     }
@@ -146,7 +146,7 @@ app.get("/leads", async(req, res) => {
         }
 
 
-        const leadsList = await Lead.find(filter).populate({ path: "salesAgent", populate: { path: "comments" } });
+        const leadsList = await Lead.find(filter).populate({ path: "salesAgent" });
         checkLeads(leadsList);
 
         function checkLeads(leadsList) {
@@ -287,13 +287,9 @@ app.post("/leads/:leadId/comments", async(req, res) => {
         const commentReqBody = req.body;
         const comment = new Comment(commentReqBody);
         const commentSaved = await comment.save();
-        console.log(commentSaved)
-        const currentLead = await Lead.findById(leadId).populate("salesAgent");
-        // const leadWithComments = await Agent.findByIdAndUpdate(currentLead, { $push: { comments: { leadId: leadId, commentsObj: commentSaved._id } } }, { new: true }).populate("comments");
-        const leadFetched = await getLeadById(leadId);
-        if (leadFetched) {
-            res.json(leadFetched)
-        }
+
+
+
 
 
     } catch (error) {
@@ -301,7 +297,73 @@ app.post("/leads/:leadId/comments", async(req, res) => {
     }
 })
 
+app.get("/comments", async(req, res) => {
+    try {
 
+        const comments = await Comment.find();
+        if (comments.length != 0) {
+            res.json(comments);
+        } else {
+            res.status(404).json({ error: "Comments Not Found" })
+        }
+
+    } catch (error) {
+        res.status(500).json({ error: "Error Fetching Comments" })
+    }
+})
+
+app.get("/report/pipeline", async(req, res) => {
+    try {
+        const totalLeadsInPipeline = {}
+        const newLeads = await Lead.find({ status: "New" });
+        const contacted = await Lead.find({ status: "Contacted" })
+        const qualified = await Lead.find({ status: "Qualified" })
+        const proposalSent = await Lead.find({ status: "Proposal Sent" })
+        totalLeadsInPipeline["New"] = newLeads.length;
+        totalLeadsInPipeline["Contacted"] = contacted.length;
+        totalLeadsInPipeline["Qualified"] = qualified.length;
+        totalLeadsInPipeline["Proposal Sent"] = proposalSent.length
+        res.json({ totalLeadsInPipeline: totalLeadsInPipeline })
+
+    } catch (error) {
+        res.status(500).json({ error: "Cannot Fetch Reports for total leads" })
+    }
+})
+
+app.get("/report/closed-by-agent", async(req, res) => {
+    try {
+
+        const closedLeads = await Lead.find({ status: "Closed" }).populate("salesAgent");
+
+        const agentsClosedLeads = {};
+        closedLeads.map((lead) => {
+            if (lead.salesAgent.name in agentsClosedLeads) {
+                agentsClosedLeads[lead.salesAgent.name]++;
+            } else {
+                agentsClosedLeads[lead.salesAgent.name] = 1;
+            }
+        })
+
+
+        res.json({ leads: agentsClosedLeads })
+
+    } catch (error) {
+
+    }
+})
+
+app.get("/report/last-week", async(req, res) => {
+
+    try {
+
+        const currentDate = new Date();
+        console.log(currentDate)
+        res.json({ date: currentDate })
+    } catch (error) {
+        console.log("Cannot fetch leads closed in Last")
+    }
+
+})
 
 const PORT = 3000;
 app.listen(PORT, () => {
